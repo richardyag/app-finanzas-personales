@@ -316,6 +316,10 @@
         <label class="form-label">Categoría</label>
         <div class="chips" id="chipsContainer"></div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input class="form-input" id="movFecha" type="date">
+      </div>
     </div>
     <div id="exchangeFields" style="display:none">
       <div class="row2">
@@ -354,7 +358,15 @@
 <div class="overlay" id="modalCuenta" style="display:none">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">Nueva cuenta recurrente</div>
+    <div class="modal-title">Nuevo programado</div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <div class="type-grid">
+        <div class="type-btn selected" id="billDirGasto" onclick="setBillDir('gasto')"><span class="emoji">📤</span>Pago / Gasto</div>
+        <div class="type-btn" id="billDirIngreso" onclick="setBillDir('ingreso')"><span class="emoji">📥</span>Cobro / Ingreso</div>
+      </div>
+    </div>
+    <input type="hidden" id="billDirection" value="gasto">
     <div class="row2">
       <div class="form-group">
         <label class="form-label">Ícono</label>
@@ -411,6 +423,24 @@
       </div>
     </div>
     <button class="modal-submit" id="submitCuenta">Guardar cuenta</button>
+  </div>
+</div>
+
+<!-- MODAL: REGISTRAR COBRO/PAGO REAL -->
+<div class="overlay" id="modalRegistrar" style="display:none">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="registrarTitle">Registrar pago</div>
+    <div class="form-group">
+      <label class="form-label">Monto real</label>
+      <input class="form-input" id="registrarMonto" type="number" placeholder="0" inputmode="decimal">
+      <div class="form-hint">Se usará como monto esperado el próximo mes</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Fecha</label>
+      <input class="form-input" id="registrarFecha" type="date">
+    </div>
+    <button class="modal-submit" id="submitRegistrar">Confirmar</button>
   </div>
 </div>
 
@@ -594,16 +624,61 @@ const TYPE_M = {
 // ── STORAGE ──
 const movKey = () => `fin_mov_${curYear}_${curMonth}`;
 const loadMovs = () => { try{return JSON.parse(localStorage.getItem(movKey())||'[]');}catch{return[];} };
-const saveMovs = d => localStorage.setItem(movKey(), JSON.stringify(d));
+const saveMovs = d => { localStorage.setItem(movKey(), JSON.stringify(d)); idbSet(movKey(), d); };
 const loadMovsFor = (y,m) => { try{return JSON.parse(localStorage.getItem(`fin_mov_${y}_${m}`)||'[]');}catch{return[];} };
 const loadBills = () => { try{return JSON.parse(localStorage.getItem('fin_bills')||'[]');}catch{return[];} };
-const saveBills = b => localStorage.setItem('fin_bills', JSON.stringify(b));
+const saveBills = b => { localStorage.setItem('fin_bills', JSON.stringify(b)); idbSet('fin_bills', b); };
 const loadAssets = () => { try{return JSON.parse(localStorage.getItem('fin_assets')||'[]');}catch{return[];} };
-const saveAssets = d => localStorage.setItem('fin_assets', JSON.stringify(d));
+const saveAssets = d => { localStorage.setItem('fin_assets', JSON.stringify(d)); idbSet('fin_assets', d); };
 const loadLiabs = () => { try{return JSON.parse(localStorage.getItem('fin_liabs')||'[]');}catch{return[];} };
-const saveLiabs = d => localStorage.setItem('fin_liabs', JSON.stringify(d));
+const saveLiabs = d => { localStorage.setItem('fin_liabs', JSON.stringify(d)); idbSet('fin_liabs', d); };
 const loadFondos = () => { try{return JSON.parse(localStorage.getItem('fin_fondos')||'[]');}catch{return[];} };
-const saveFondos = d => localStorage.setItem('fin_fondos', JSON.stringify(d));
+const saveFondos = d => { localStorage.setItem('fin_fondos', JSON.stringify(d)); idbSet('fin_fondos', d); };
+
+// ── INDEXEDDB BACKUP (automático, sin acción del usuario) ──
+let _idb = null;
+function idbOpen() {
+  return new Promise((res, rej) => {
+    if (_idb) return res(_idb);
+    const req = indexedDB.open('MisFinanzasDB', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('kv', {keyPath:'k'});
+    req.onsuccess = e => { _idb = e.target.result; res(_idb); };
+    req.onerror = () => rej();
+  });
+}
+function idbSet(key, val) {
+  idbOpen().then(db => {
+    const tx = db.transaction('kv', 'readwrite');
+    tx.objectStore('kv').put({k: key, v: val});
+  }).catch(()=>{});
+}
+function idbGet(key) {
+  return idbOpen().then(db => new Promise((res, rej) => {
+    const req = db.transaction('kv').objectStore('kv').get(key);
+    req.onsuccess = () => res(req.result?.v ?? null);
+    req.onerror = () => rej();
+  }));
+}
+// Al iniciar: si localStorage está vacío para una clave, intentar restaurar desde IDB
+async function idbRestoreIfNeeded() {
+  const keys = ['fin_bills','fin_assets','fin_liabs','fin_fondos','fin_last_reset'];
+  // También restaurar movimientos de los últimos 24 meses
+  for (let i=0; i<24; i++) {
+    const d = new Date(); d.setMonth(d.getMonth()-i);
+    keys.push(`fin_mov_${d.getFullYear()}_${d.getMonth()}`);
+  }
+  for (const key of keys) {
+    if (!localStorage.getItem(key)) {
+      try {
+        const val = await idbGet(key);
+        if (val !== null) localStorage.setItem(key, JSON.stringify(val));
+      } catch(e){}
+    }
+  }
+}
+// Parchear saveMovs para también escribir en IDB
+const _origSaveMovs = k => v => { localStorage.setItem(k, JSON.stringify(v)); idbSet(k, v); };
+const saveMovsFor = (y,m,d) => _origSaveMovs(`fin_mov_${y}_${m}`)(d);
 
 const fmtC = (n, cur) => (CUR_SYM[cur]||'$') + Math.abs(n).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
 
@@ -733,13 +808,21 @@ function renderMovimientos() {
   }
 }
 
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + (iso.length===10 ? 'T12:00:00' : ''));
+  return d.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit'});
+}
+
 function movItem(item) {
   const isG = item.type.startsWith('gasto') || item.isExchangeOut;
   const isEx = item.isExchangeOut || item.isExchangeIn;
   const m = isEx ? TYPE_M['cambio'] : (TYPE_M[item.type] || TYPE_M['gasto-variable']);
   const cur = item.currency || 'ARS';
   const badge = cur !== 'ARS' ? `<span class="cur-badge">${cur}</span>` : '';
-  return `<div class="item"><div class="item-icon" style="background:${m.bg}">${m.emoji}</div><div class="item-info"><div class="item-name">${item.name}${badge}</div><div class="item-tag">${item.category||m.label}</div></div><div class="item-amount" style="color:${isG?'var(--red)':'var(--green)'}">${isG?'-':'+'}${fmtC(item.amount,cur)}</div><button class="item-delete" onclick="delMov('${item.id}')">✕</button></div>`;
+  const fecha = item.userDate || (item.date ? item.date.slice(0,10) : '');
+  const fechaTag = fecha ? ` · ${fmtDate(fecha)}` : '';
+  return `<div class="item"><div class="item-icon" style="background:${m.bg}">${m.emoji}</div><div class="item-info"><div class="item-name">${item.name}${badge}</div><div class="item-tag">${item.category||m.label}${fechaTag}</div></div><div class="item-amount" style="color:${isG?'var(--red)':'var(--green)'}">${isG?'-':'+'}${fmtC(item.amount,cur)}</div><button class="item-delete" onclick="delMov('${item.id}')">✕</button></div>`;
 }
 
 function delMov(id) { saveMovs(loadMovs().filter(i=>i.id!==id)); refresh(); }
@@ -750,40 +833,86 @@ function renderBills() {
   const bills = loadBills();
   const area = document.getElementById('billsArea');
   if (!bills.length) {
-    area.innerHTML=`<div class="section"><div class="empty-state"><span class="big">🔔</span>No hay cuentas configuradas todavía.<br>Agregá luz, gas, internet y más.</div></div>`; return;
+    area.innerHTML=`<div class="section"><div class="empty-state"><span class="big">🔔</span>Sin programados todavía.<br>Agregá cobros (sueldo, jubilación...) y pagos (luz, gas, alquiler...).</div></div>`; return;
   }
-  const ws = bills.map(b=>({...b, _s:billStatus(b)}));
-  ws.sort((a,b) => {
-    const o={overdue:0,soon:1,ok:2,paid:3};
-    if (o[a._s.cls]!==o[b._s.cls]) return o[a._s.cls]-o[b._s.cls];
-    if (a._s.days!==null && b._s.days!==null) return a._s.days-b._s.days;
-    return 0;
-  });
-  const pendTotal = bills.filter(b=>!b.paidThisCycle&&b.amount).reduce((s,b)=>s+b.amount,0);
-  area.innerHTML=`<div class="section"><div class="section-header"><div class="section-title">🔔 Cuentas recurrentes</div><div class="section-total" style="color:var(--red)">${pendTotal?fmtC(pendTotal,'ARS')+' pend.':''}</div></div><div class="items-list">${ws.map(b=>billCard(b,b._s)).join('')}</div></div>`;
+
+  function sortBills(arr) {
+    return arr.map(b=>({...b,_s:billStatus(b)})).sort((a,b)=>{
+      const o={overdue:0,soon:1,ok:2,paid:3};
+      if (o[a._s.cls]!==o[b._s.cls]) return o[a._s.cls]-o[b._s.cls];
+      if (a._s.days!==null&&b._s.days!==null) return a._s.days-b._s.days;
+      return 0;
+    });
+  }
+
+  const cobros = sortBills(bills.filter(b=>b.direction==='ingreso'));
+  const pagos  = sortBills(bills.filter(b=>b.direction!=='ingreso'));
+
+  let html = '';
+  if (cobros.length) {
+    const pendIng = cobros.filter(b=>!b.paidThisCycle&&b.amount).reduce((s,b)=>s+b.amount,0);
+    html += `<div class="section"><div class="section-header"><div class="section-title">📥 Cobros programados</div><div class="section-total" style="color:var(--green)">${pendIng?fmtC(pendIng,'ARS')+' pend.':''}</div></div><div class="items-list">${cobros.map(b=>billCard(b,b._s)).join('')}</div></div>`;
+  }
+  if (pagos.length) {
+    const pendGas = pagos.filter(b=>!b.paidThisCycle&&b.amount).reduce((s,b)=>s+b.amount,0);
+    html += `<div class="section"><div class="section-header"><div class="section-title">📤 Pagos programados</div><div class="section-total" style="color:var(--red)">${pendGas?fmtC(pendGas,'ARS')+' pend.':''}</div></div><div class="items-list">${pagos.map(b=>billCard(b,b._s)).join('')}</div></div>`;
+  }
+  area.innerHTML = html;
 }
 
 function billCard(bill, s) {
+  const isIngreso = bill.direction === 'ingreso';
   const clazz = s.cls==='overdue'?'urgent':s.cls==='soon'?'soon':s.cls==='paid'?'paid':'';
   const badgeCls = {overdue:'badge-overdue',soon:'badge-soon',ok:'badge-ok',paid:'badge-paid'}[s.cls];
-  const dueText = s.cls==='paid' ? `Pagado · próx día ${bill.dia}` : `Vence día ${bill.dia} · ${FREQ_L[bill.frecuencia]||'Mensual'}`;
+  const lastInfo = bill.lastDate ? ` · último: ${fmtDate(bill.lastDate)}` : '';
+  const dueText = s.cls==='paid'
+    ? `${isIngreso?'Cobrado':'Pagado'} · próx día ${bill.dia}${lastInfo}`
+    : `${isIngreso?'Cobrar':'Vence'} día ${bill.dia} · ${FREQ_L[bill.frecuencia]||'Mensual'}`;
+  const actionLabel = isIngreso ? '✓ Registrar cobro' : '✓ Registrar pago';
   const actionBtn = s.cls==='paid'
     ? `<button class="btn-unpay" onclick="unmarkPaid('${bill.id}')">↺ Desmarcar</button>`
-    : `<button class="btn-pay" onclick="markPaid('${bill.id}')">✓ Marcar como pagada</button>`;
-  return `<div class="bill-item ${clazz}"><div class="bill-top"><div class="bill-icon">${bill.emoji}</div><div class="bill-info"><div class="bill-name">${bill.name}</div><div class="bill-meta">${dueText}</div></div><div class="bill-right"><div class="bill-amount">${bill.amount?fmtC(bill.amount,'ARS'):'—'}</div><div class="bill-status-badge ${badgeCls}">${s.label}</div></div></div><div class="bill-bottom">${actionBtn}<button class="btn-del" onclick="delBill('${bill.id}')">🗑</button></div></div>`;
+    : `<button class="btn-pay" onclick="openRegistrar('${bill.id}')">${actionLabel}</button>`;
+  const amtColor = isIngreso ? 'var(--green)' : 'var(--red)';
+  return `<div class="bill-item ${clazz}"><div class="bill-top"><div class="bill-icon">${bill.emoji}</div><div class="bill-info"><div class="bill-name">${bill.name}</div><div class="bill-meta">${dueText}</div></div><div class="bill-right"><div class="bill-amount" style="color:${amtColor}">${bill.amount?fmtC(bill.amount,'ARS'):'—'}</div><div class="bill-status-badge ${badgeCls}">${s.label}</div></div></div><div class="bill-bottom">${actionBtn}<button class="btn-del" onclick="delBill('${bill.id}')">🗑</button></div></div>`;
 }
 
-function markPaid(id) {
-  let bills = loadBills().map(b=>b.id===id?{...b,paidThisCycle:true}:b);
-  saveBills(bills);
-  const bill = bills.find(b=>b.id===id);
-  if (bill?.amount) {
-    const movs = loadMovs();
-    movs.push({id:Date.now().toString(), type:'gasto-fijo', name:bill.name, amount:bill.amount, currency:'ARS', category:'⚡ Servicios', date:new Date().toISOString()});
-    saveMovs(movs);
-  }
-  refresh();
+let registrarBillId = null;
+function openRegistrar(id) {
+  const bill = loadBills().find(b=>b.id===id);
+  if (!bill) return;
+  registrarBillId = id;
+  const isIngreso = bill.direction === 'ingreso';
+  document.getElementById('registrarTitle').textContent = isIngreso ? 'Registrar cobro' : 'Registrar pago';
+  document.getElementById('registrarMonto').value = bill.amount || '';
+  document.getElementById('registrarFecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('modalRegistrar').style.display = 'flex';
 }
+
+document.getElementById('submitRegistrar').onclick = () => {
+  const monto = parseFloat(document.getElementById('registrarMonto').value);
+  const fecha = document.getElementById('registrarFecha').value || new Date().toISOString().slice(0,10);
+  if (!monto||monto<=0) { document.getElementById('registrarMonto').style.borderColor='var(--red)'; return; }
+  const bills = loadBills().map(b => b.id===registrarBillId
+    ? {...b, paidThisCycle:true, amount:monto, lastDate:fecha, lastAmount:monto}
+    : b);
+  saveBills(bills);
+  const bill = bills.find(b=>b.id===registrarBillId);
+  const movs = loadMovs();
+  const isIngreso = bill.direction === 'ingreso';
+  movs.push({
+    id: Date.now().toString(),
+    type: isIngreso ? 'ingreso-fijo' : 'gasto-fijo',
+    name: bill.name,
+    amount: monto,
+    currency: 'ARS',
+    category: isIngreso ? '💼 Sueldo' : '⚡ Servicios',
+    userDate: fecha,
+    date: new Date().toISOString()
+  });
+  saveMovs(movs);
+  closeModals(); refresh();
+};
+
 function unmarkPaid(id) { saveBills(loadBills().map(b=>b.id===id?{...b,paidThisCycle:false}:b)); refresh(); }
 function delBill(id) { saveBills(loadBills().filter(b=>b.id!==id)); refresh(); }
 
@@ -1069,13 +1198,14 @@ document.getElementById('fabBtn').onclick = () => {
     document.getElementById('movNombre').value='';
     document.getElementById('movMonto').value='';
     document.getElementById('movCurrency').value='ARS';
+    document.getElementById('movFecha').value = new Date().toISOString().slice(0,10);
     selChip=null; updateChips();
     document.getElementById('modalMov').style.display='flex';
   }
 };
 
 // ── CLOSE MODALS ──
-const MODAL_IDS = ['modalMov','modalCuenta','modalActivo','modalPasivo','modalFondo','modalFondoMov'];
+const MODAL_IDS = ['modalMov','modalCuenta','modalRegistrar','modalActivo','modalPasivo','modalFondo','modalFondoMov'];
 MODAL_IDS.forEach(id => {
   document.getElementById(id).addEventListener('click', e => { if(e.target===document.getElementById(id)) closeModals(); });
 });
@@ -1144,10 +1274,18 @@ document.getElementById('submitMov').onclick = () => {
   ni.style.borderColor = name ? 'var(--border)' : 'var(--red)';
   mi.style.borderColor = (!isNaN(amount)&&amount>0) ? 'var(--border)' : 'var(--red)';
   if (!name||isNaN(amount)||amount<=0) return;
+  const userDate = document.getElementById('movFecha').value || new Date().toISOString().slice(0,10);
   const movs = loadMovs();
-  movs.push({id:Date.now().toString(), type:selType, name, amount, currency, category:selChip||'', date:new Date().toISOString()});
+  movs.push({id:Date.now().toString(), type:selType, name, amount, currency, category:selChip||'', userDate, date:new Date().toISOString()});
   saveMovs(movs); closeModals(); refresh();
 };
+
+// ── BILL DIRECTION TOGGLE ──
+function setBillDir(dir) {
+  document.getElementById('billDirection').value = dir;
+  document.getElementById('billDirGasto').classList.toggle('selected', dir==='gasto');
+  document.getElementById('billDirIngreso').classList.toggle('selected', dir==='ingreso');
+}
 
 // ── SUBMIT CUENTA ──
 document.getElementById('submitCuenta').onclick = () => {
@@ -1156,6 +1294,7 @@ document.getElementById('submitCuenta').onclick = () => {
   const bills = loadBills();
   bills.push({
     id:Date.now().toString(), name,
+    direction: document.getElementById('billDirection').value || 'gasto',
     amount: parseFloat(document.getElementById('billMonto').value)||0,
     dia: Math.min(Math.max(parseInt(document.getElementById('billDia').value)||1,1),31),
     frecuencia: parseInt(document.getElementById('billFrecuencia').value)||1,
@@ -1165,6 +1304,7 @@ document.getElementById('submitCuenta').onclick = () => {
   });
   saveBills(bills);
   document.getElementById('billNombre').value=''; document.getElementById('billMonto').value=''; document.getElementById('billDia').value='';
+  setBillDir('gasto');
   closeModals(); refresh();
 };
 
@@ -1224,9 +1364,11 @@ document.getElementById('submitFondoMov').onclick = () => {
 };
 
 // ── INIT ──
-resetBillsIfNewMonth();
-updateChips();
-refresh();
+idbRestoreIfNeeded().finally(() => {
+  resetBillsIfNewMonth();
+  updateChips();
+  refresh();
+});
 </script>
 </body>
 </html>
