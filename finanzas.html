@@ -156,6 +156,23 @@
   .patrim-value.liab { color:var(--red); }
   .patrim-del { background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:7px; font-size:12px; cursor:pointer; margin-top:10px; width:100%; }
 
+  /* Cuenta líquida card */
+  .cuenta-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; animation:fadeIn .2s ease; }
+  .cuenta-top { display:flex; align-items:center; gap:10px; }
+  .cuenta-icon { width:40px; height:40px; border-radius:12px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .cuenta-info { flex:1; }
+  .cuenta-name { font-size:14px; font-weight:600; }
+  .cuenta-type { font-size:11px; color:var(--muted); margin-top:2px; }
+  .cuenta-balance { font-family:'Fraunces',serif; font-size:18px; font-weight:700; flex-shrink:0; }
+  .cuenta-balance.positive { color:var(--green); }
+  .cuenta-balance.negative { color:var(--red); }
+  .cuenta-actions { display:flex; gap:8px; margin-top:10px; }
+  .btn-cuenta-adj { flex:1; background:var(--surface2); color:var(--muted); border:1px solid var(--border); border-radius:10px; padding:8px; font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif; }
+  .btn-cuenta-del { background:none; border:1px solid var(--border); color:var(--muted); border-radius:10px; padding:8px 12px; font-size:12px; cursor:pointer; }
+  .preview-item { background:var(--surface); border:1px dashed var(--border); border-radius:14px; padding:12px 13px; display:flex; align-items:center; gap:11px; opacity:.65; }
+  .preview-badge { font-size:9px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--accent-dim); color:var(--accent); margin-left:4px; }
+  .btn-confirmar { background:var(--accent-dim); color:var(--accent); border:1px solid var(--accent); border-radius:8px; padding:5px 10px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+
   /* Net worth */
   .net-worth { background:linear-gradient(135deg,#1a1f35,#0e1628); border:1px solid #2d3a5e; border-radius:16px; padding:16px; margin:0 16px 14px; }
   .net-worth-title { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:10px; }
@@ -261,7 +278,8 @@
 <!-- PAGE: PATRIMONIO -->
 <div id="pagePatrimonio" style="display:none">
   <div class="sub-tabs">
-    <div class="sub-tab active" data-ptab="activos">Activos</div>
+    <div class="sub-tab active" data-ptab="cuentas-liq">💳 Cuentas</div>
+    <div class="sub-tab" data-ptab="activos">Activos</div>
     <div class="sub-tab" data-ptab="pasivos">Pasivos</div>
     <div class="sub-tab" data-ptab="fondos">✈️ Fondos</div>
   </div>
@@ -315,6 +333,10 @@
       <div class="form-group">
         <label class="form-label">Categoría</label>
         <div class="chips" id="chipsContainer"></div>
+      </div>
+      <div class="form-group" id="movCuentaGroup">
+        <label class="form-label">Cuenta (opcional)</label>
+        <select class="form-input" id="movCuenta"><option value="">— Sin cuenta —</option></select>
       </div>
       <div class="form-group">
         <label class="form-label">Fecha</label>
@@ -426,6 +448,37 @@
   </div>
 </div>
 
+<!-- MODAL: AUTO-PROGRAMAR -->
+<div class="overlay" id="modalAutoProg" style="display:none">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">¿Programar mensualmente?</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">
+      Este concepto aparecerá como recordatorio todos los meses para que puedas registrar el cobro/pago real cuando ocurra.
+    </p>
+    <div class="row2">
+      <div class="form-group">
+        <label class="form-label">Día del mes</label>
+        <input class="form-input" id="autoProgDia" type="number" min="1" max="31" placeholder="Ej: 1" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Alertar con</label>
+        <select class="form-input" id="autoProgAlerta">
+          <option value="3">3 días antes</option>
+          <option value="5" selected>5 días antes</option>
+          <option value="7">7 días antes</option>
+        </select>
+      </div>
+    </div>
+    <input type="hidden" id="autoProgName">
+    <input type="hidden" id="autoProgMonto">
+    <input type="hidden" id="autoProgDir">
+    <input type="hidden" id="autoProgEmoji">
+    <button class="modal-submit" id="submitAutoProg">Programar</button>
+    <button style="width:100%;background:none;border:none;color:var(--muted);padding:12px;font-size:13px;cursor:pointer;margin-top:4px;" onclick="closeModals()">No gracias</button>
+  </div>
+</div>
+
 <!-- MODAL: REGISTRAR COBRO/PAGO REAL -->
 <div class="overlay" id="modalRegistrar" style="display:none">
   <div class="modal">
@@ -437,10 +490,68 @@
       <div class="form-hint">Se usará como monto esperado el próximo mes</div>
     </div>
     <div class="form-group">
+      <label class="form-label">Cuenta (opcional)</label>
+      <select class="form-input" id="registrarCuenta"><option value="">— Sin cuenta —</option></select>
+    </div>
+    <div class="form-group">
       <label class="form-label">Fecha</label>
       <input class="form-input" id="registrarFecha" type="date">
     </div>
     <button class="modal-submit" id="submitRegistrar">Confirmar</button>
+  </div>
+</div>
+
+<!-- MODAL: CUENTA LÍQUIDA -->
+<div class="overlay" id="modalCuentaLiq" style="display:none">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nueva cuenta</div>
+    <div class="row2">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-input" id="cuentaLiqEmoji">
+          <option value="🏦">🏦 Banco</option>
+          <option value="💵">💵 Efectivo</option>
+          <option value="📱">📱 Billetera digital</option>
+          <option value="💳">💳 Tarjeta débito</option>
+          <option value="🏧">🏧 Caja de ahorro</option>
+          <option value="📦">📦 Otra</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input class="form-input" id="cuentaLiqNombre" placeholder="Ej: Galicia, Efectivo...">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="form-group">
+        <label class="form-label">Saldo inicial</label>
+        <input class="form-input" id="cuentaLiqSaldo" type="number" placeholder="0" inputmode="decimal">
+        <div class="form-hint">Saldo actual al crear la cuenta</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Moneda</label>
+        <select class="form-input" id="cuentaLiqCurrency">
+          <option value="ARS">$ ARS</option>
+          <option value="USD">US$ USD</option>
+          <option value="EUR">€ EUR</option>
+        </select>
+      </div>
+    </div>
+    <button class="modal-submit" id="submitCuentaLiq">Crear cuenta</button>
+  </div>
+</div>
+
+<!-- MODAL: AJUSTAR SALDO CUENTA -->
+<div class="overlay" id="modalAjustarCuenta" style="display:none">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Ajustar saldo</div>
+    <div class="form-group">
+      <label class="form-label">Nuevo saldo</label>
+      <input class="form-input" id="ajustarSaldo" type="number" placeholder="0" inputmode="decimal">
+    </div>
+    <button class="modal-submit" id="submitAjustarCuenta">Guardar</button>
   </div>
 </div>
 
@@ -588,6 +699,10 @@
       <label class="form-label">Monto</label>
       <input class="form-input" id="fondoMovMonto" type="number" placeholder="0" inputmode="decimal">
     </div>
+    <div class="form-group" id="fondoMovCuentaGroup">
+      <label class="form-label" id="fondoMovCuentaLabel">Cuenta de origen (opcional)</label>
+      <select class="form-input" id="fondoMovCuenta"><option value="">— Sin cuenta —</option></select>
+    </div>
     <button class="modal-submit" id="submitFondoMov">Confirmar</button>
   </div>
 </div>
@@ -603,7 +718,8 @@ let curMonth = now.getMonth(), curYear = now.getFullYear();
 let curPage = 'movimientos', curTab = 'todos';
 let selType = 'ingreso-fijo', selChip = null, selBalCur = 'ARS';
 let statView = 'mes', statYear = now.getFullYear(), statCur = 'ARS';
-let patrimonioTab = 'activos';
+let patrimonioTab = 'cuentas-liq';
+let ajustarCuentaId = null;
 let fondoMovId = null, fondoMovDir = 1;
 let mainChart = null;
 
@@ -634,6 +750,8 @@ const loadLiabs = () => { try{return JSON.parse(localStorage.getItem('fin_liabs'
 const saveLiabs = d => { localStorage.setItem('fin_liabs', JSON.stringify(d)); idbSet('fin_liabs', d); };
 const loadFondos = () => { try{return JSON.parse(localStorage.getItem('fin_fondos')||'[]');}catch{return[];} };
 const saveFondos = d => { localStorage.setItem('fin_fondos', JSON.stringify(d)); idbSet('fin_fondos', d); };
+const loadCuentasLiq = () => { try{return JSON.parse(localStorage.getItem('fin_cuentas_liq')||'[]');}catch{return[];} };
+const saveCuentasLiq = d => { localStorage.setItem('fin_cuentas_liq', JSON.stringify(d)); idbSet('fin_cuentas_liq', d); };
 
 // ── INDEXEDDB BACKUP (automático, sin acción del usuario) ──
 let _idb = null;
@@ -661,7 +779,7 @@ function idbGet(key) {
 }
 // Al iniciar: si localStorage está vacío para una clave, intentar restaurar desde IDB
 async function idbRestoreIfNeeded() {
-  const keys = ['fin_bills','fin_assets','fin_liabs','fin_fondos','fin_last_reset'];
+  const keys = ['fin_bills','fin_assets','fin_liabs','fin_fondos','fin_cuentas_liq','fin_last_reset'];
   // También restaurar movimientos de los últimos 24 meses
   for (let i=0; i<24; i++) {
     const d = new Date(); d.setMonth(d.getMonth()-i);
@@ -806,6 +924,23 @@ function renderMovimientos() {
     const cur = data[0]?.currency || 'ARS';
     area.innerHTML = `<div class="section"><div class="section-header"><div class="section-title">Total</div><div class="section-total" style="color:${isG?'var(--red)':'var(--green)'}">${fmtC(tot,cur)}</div></div><div class="items-list">${data.length?data.map(movItem).join(''):emptyMov()}</div></div>`;
   }
+
+  // Previsiones en meses futuros (solo en tab "todos")
+  if (curTab==='todos') {
+    const isFuture = curYear > now.getFullYear() || (curYear===now.getFullYear() && curMonth>now.getMonth());
+    if (isFuture) {
+      const confirmed = new Set(loadMovs().filter(m=>m.billId).map(m=>m.billId));
+      const pending = loadBills().filter(b=>!confirmed.has(b.id));
+      if (pending.length) {
+        const cobros = pending.filter(b=>b.direction==='ingreso');
+        const pagos  = pending.filter(b=>b.direction!=='ingreso');
+        let ph = '';
+        if (cobros.length) ph += `<div class="section"><div class="section-header"><div class="section-title" style="color:var(--muted)">📅 Cobros previstos</div></div><div class="items-list">${cobros.map(previewItem).join('')}</div></div>`;
+        if (pagos.length)  ph += `<div class="section"><div class="section-header"><div class="section-title" style="color:var(--muted)">📅 Pagos previstos</div></div><div class="items-list">${pagos.map(previewItem).join('')}</div></div>`;
+        area.innerHTML += ph;
+      }
+    }
+  }
 }
 
 function fmtDate(iso) {
@@ -827,6 +962,37 @@ function movItem(item) {
 
 function delMov(id) { saveMovs(loadMovs().filter(i=>i.id!==id)); refresh(); }
 function emptyMov() { return `<div class="empty-state"><span class="big">📭</span>Sin movimientos este mes</div>`; }
+
+function previewItem(bill) {
+  const isIngreso = bill.direction==='ingreso';
+  const amtText = bill.amount ? fmtC(bill.amount,'ARS') : '—';
+  return `<div class="preview-item">
+    <div class="item-icon" style="background:${isIngreso?'#052e16':'#2d0a0a'}">${bill.emoji}</div>
+    <div class="item-info">
+      <div class="item-name">${bill.name}<span class="preview-badge">PREVISTO</span></div>
+      <div class="item-tag">Día ${bill.dia} · ${FREQ_L[bill.frecuencia||1]||'Mensual'}</div>
+    </div>
+    <div class="item-amount" style="color:${isIngreso?'var(--green)':'var(--red)'}">${isIngreso?'+':'-'}${amtText}</div>
+    <button class="btn-confirmar" onclick="confirmarPrevision('${bill.id}')">✓</button>
+  </div>`;
+}
+
+function confirmarPrevision(billId) {
+  const bill = loadBills().find(b=>b.id===billId);
+  if (!bill) return;
+  const movs = loadMovs();
+  if (movs.some(m=>m.billId===billId)) return;
+  const isIngreso = bill.direction==='ingreso';
+  movs.push({
+    id: Date.now().toString(),
+    type: isIngreso ? 'ingreso-fijo' : 'gasto-fijo',
+    name: bill.name, amount: bill.amount||0, currency:'ARS',
+    category: isIngreso ? '💼 Sueldo' : '⚡ Servicios',
+    userDate: `${curYear}-${String(curMonth+1).padStart(2,'0')}-${String(bill.dia).padStart(2,'0')}`,
+    date: new Date().toISOString(), cuentaId:'', billId
+  });
+  saveMovs(movs); refresh();
+}
 
 // ── BILLS ──
 function renderBills() {
@@ -885,31 +1051,31 @@ function openRegistrar(id) {
   document.getElementById('registrarTitle').textContent = isIngreso ? 'Registrar cobro' : 'Registrar pago';
   document.getElementById('registrarMonto').value = bill.amount || '';
   document.getElementById('registrarFecha').value = new Date().toISOString().slice(0,10);
+  fillCuentaSelect('registrarCuenta', 'ARS');
   document.getElementById('modalRegistrar').style.display = 'flex';
 }
 
 document.getElementById('submitRegistrar').onclick = () => {
   const monto = parseFloat(document.getElementById('registrarMonto').value);
   const fecha = document.getElementById('registrarFecha').value || new Date().toISOString().slice(0,10);
+  const cuentaId = document.getElementById('registrarCuenta').value || '';
   if (!monto||monto<=0) { document.getElementById('registrarMonto').style.borderColor='var(--red)'; return; }
   const bills = loadBills().map(b => b.id===registrarBillId
     ? {...b, paidThisCycle:true, amount:monto, lastDate:fecha, lastAmount:monto}
     : b);
   saveBills(bills);
   const bill = bills.find(b=>b.id===registrarBillId);
-  const movs = loadMovs();
   const isIngreso = bill.direction === 'ingreso';
+  const movs = loadMovs();
   movs.push({
     id: Date.now().toString(),
     type: isIngreso ? 'ingreso-fijo' : 'gasto-fijo',
-    name: bill.name,
-    amount: monto,
-    currency: 'ARS',
+    name: bill.name, amount: monto, currency: 'ARS',
     category: isIngreso ? '💼 Sueldo' : '⚡ Servicios',
-    userDate: fecha,
-    date: new Date().toISOString()
+    userDate: fecha, date: new Date().toISOString(), cuentaId
   });
   saveMovs(movs);
+  if (cuentaId) cuentaApplyDelta(cuentaId, isIngreso ? monto : -monto);
   closeModals(); refresh();
 };
 
@@ -1015,14 +1181,15 @@ function renderChartAnio() {
 // ── PATRIMONIO ──
 function renderPatrimonio() {
   renderNetWorth();
-  if (patrimonioTab==='activos') renderActivos();
+  if (patrimonioTab==='cuentas-liq') renderCuentasLiq();
+  else if (patrimonioTab==='activos') renderActivos();
   else if (patrimonioTab==='pasivos') renderPasivos();
   else renderFondos();
 }
 
 function renderNetWorth() {
   const area = document.getElementById('netWorthArea');
-  if (patrimonioTab==='fondos') { area.innerHTML=''; return; }
+  if (patrimonioTab==='fondos'||patrimonioTab==='cuentas-liq') { area.innerHTML=''; return; }
   const assets = loadAssets(), liabs = loadLiabs();
   const totA={}, totL={};
   assets.forEach(a => { const c=a.currency||'ARS'; totA[c]=(totA[c]||0)+a.valor; });
@@ -1042,11 +1209,55 @@ function renderNetWorth() {
   area.innerHTML = `<div class="net-worth"><div class="net-worth-title">📊 Resumen patrimonial</div>${html}</div>`;
 }
 
+// ── CUENTAS LÍQUIDAS ──
+function renderCuentasLiq() {
+  const cuentas = loadCuentasLiq();
+  const area = document.getElementById('patrimonioContent');
+  if (!cuentas.length) {
+    area.innerHTML=`<div class="section"><div class="empty-state"><span class="big">🏦</span>No hay cuentas creadas todavía.<br>Agregá tu cuenta bancaria, efectivo o billetera digital.</div></div>`; return;
+  }
+  const byCur = {};
+  cuentas.forEach(c => { const cu=c.currency||'ARS'; if(!byCur[cu])byCur[cu]=[]; byCur[cu].push(c); });
+  let html = '';
+  Object.entries(byCur).forEach(([cur, items]) => {
+    const tot = items.reduce((s,c)=>s+c.balance,0);
+    html += `<div class="section"><div class="section-header"><div class="section-title">Cuentas ${cur}</div><div class="section-total" style="color:var(--green)">${fmtC(tot,cur)}</div></div><div class="items-list">${items.map(cuentaLiqCard).join('')}</div></div>`;
+  });
+  area.innerHTML = html;
+}
+
+function cuentaLiqCard(c) {
+  const cur = c.currency||'ARS';
+  return `<div class="cuenta-card"><div class="cuenta-top"><div class="cuenta-icon">${c.emoji}</div><div class="cuenta-info"><div class="cuenta-name">${c.name}</div><div class="cuenta-type">${cur}</div></div><div class="cuenta-balance ${c.balance>=0?'positive':'negative'}">${fmtC(c.balance,cur)}</div></div><div class="cuenta-actions"><button class="btn-cuenta-adj" onclick="openAjustarCuenta('${c.id}',${c.balance})">✏️ Ajustar saldo</button><button class="btn-cuenta-del" onclick="delCuentaLiq('${c.id}')">🗑</button></div></div>`;
+}
+
+function openAjustarCuenta(id, balance) {
+  ajustarCuentaId = id;
+  document.getElementById('ajustarSaldo').value = balance;
+  document.getElementById('modalAjustarCuenta').style.display = 'flex';
+}
+function delCuentaLiq(id) { saveCuentasLiq(loadCuentasLiq().filter(c=>c.id!==id)); renderCuentasLiq(); }
+
+// Aplica delta a una cuenta (suma/resta del saldo)
+function cuentaApplyDelta(cuentaId, delta) {
+  if (!cuentaId) return;
+  saveCuentasLiq(loadCuentasLiq().map(c => c.id===cuentaId ? {...c, balance: c.balance+delta} : c));
+}
+
+// Llena los selects de cuenta filtrando por moneda
+function fillCuentaSelect(selectId, currency, selectedId='') {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const cuentas = loadCuentasLiq().filter(c=>(c.currency||'ARS')===currency);
+  sel.innerHTML = `<option value="">— Sin cuenta —</option>` +
+    cuentas.map(c=>`<option value="${c.id}"${c.id===selectedId?' selected':''}>${c.emoji} ${c.name}</option>`).join('');
+}
+
 function renderActivos() {
   const assets = loadAssets();
   const area = document.getElementById('patrimonioContent');
   if (!assets.length) {
-    area.innerHTML=`<div class="section"><div class="empty-state"><span class="big">🏦</span>No hay activos registrados.<br>Agregá tu auto, ahorros, inversiones...</div></div>`; return;
+    area.innerHTML=`<div class="section"><div class="empty-state"><span class="big">📦</span>No hay activos registrados.<br>Agregá tu auto, equipos, inversiones...</div></div>`; return;
   }
   const byCur = {};
   assets.forEach(a => { const c=a.currency||'ARS'; if(!byCur[c])byCur[c]=[]; byCur[c].push(a); });
@@ -1107,6 +1318,8 @@ function openFondoMov(id, dir) {
   const f = loadFondos().find(f=>f.id===id);
   document.getElementById('fondoMovTitle').textContent = dir>0 ? `Agregar a "${f?.name}"` : `Retirar de "${f?.name}"`;
   document.getElementById('fondoMovMonto').value = '';
+  document.getElementById('fondoMovCuentaLabel').textContent = dir>0 ? 'Cuenta de origen (opcional)' : 'Cuenta de destino (opcional)';
+  fillCuentaSelect('fondoMovCuenta', f?.currency||'ARS');
   document.getElementById('modalFondoMov').style.display = 'flex';
 }
 function delFondo(id) { saveFondos(loadFondos().filter(f=>f.id!==id)); renderFondos(); }
@@ -1179,7 +1392,10 @@ document.getElementById('fabBtn').onclick = () => {
   if (curPage==='cuentas') {
     document.getElementById('modalCuenta').style.display='flex';
   } else if (curPage==='patrimonio') {
-    if (patrimonioTab==='activos') {
+    if (patrimonioTab==='cuentas-liq') {
+      document.getElementById('cuentaLiqNombre').value=''; document.getElementById('cuentaLiqSaldo').value='';
+      document.getElementById('modalCuentaLiq').style.display='flex';
+    } else if (patrimonioTab==='activos') {
       document.getElementById('activoNombre').value=''; document.getElementById('activoValor').value=''; document.getElementById('activoNotas').value='';
       document.getElementById('modalActivo').style.display='flex';
     } else if (patrimonioTab==='pasivos') {
@@ -1199,13 +1415,14 @@ document.getElementById('fabBtn').onclick = () => {
     document.getElementById('movMonto').value='';
     document.getElementById('movCurrency').value='ARS';
     document.getElementById('movFecha').value = new Date().toISOString().slice(0,10);
+    fillCuentaSelect('movCuenta','ARS');
     selChip=null; updateChips();
     document.getElementById('modalMov').style.display='flex';
   }
 };
 
 // ── CLOSE MODALS ──
-const MODAL_IDS = ['modalMov','modalCuenta','modalRegistrar','modalActivo','modalPasivo','modalFondo','modalFondoMov'];
+const MODAL_IDS = ['modalMov','modalCuenta','modalRegistrar','modalCuentaLiq','modalAjustarCuenta','modalActivo','modalPasivo','modalFondo','modalFondoMov','modalAutoProg'];
 MODAL_IDS.forEach(id => {
   document.getElementById(id).addEventListener('click', e => { if(e.target===document.getElementById(id)) closeModals(); });
 });
@@ -1238,6 +1455,9 @@ function updateExRate() {
 }
 ['exFromAmt','exToAmt','exFromCur','exToCur'].forEach(id => {
   document.getElementById(id).addEventListener('input', updateExRate);
+});
+document.getElementById('movCurrency').addEventListener('change', () => {
+  fillCuentaSelect('movCuenta', document.getElementById('movCurrency').value);
 });
 
 // ── CHIPS ──
@@ -1275,9 +1495,27 @@ document.getElementById('submitMov').onclick = () => {
   mi.style.borderColor = (!isNaN(amount)&&amount>0) ? 'var(--border)' : 'var(--red)';
   if (!name||isNaN(amount)||amount<=0) return;
   const userDate = document.getElementById('movFecha').value || new Date().toISOString().slice(0,10);
+  const cuentaId = document.getElementById('movCuenta').value || '';
+  const movId = Date.now().toString();
   const movs = loadMovs();
-  movs.push({id:Date.now().toString(), type:selType, name, amount, currency, category:selChip||'', userDate, date:new Date().toISOString()});
-  saveMovs(movs); closeModals(); refresh();
+  movs.push({id:movId, type:selType, name, amount, currency, category:selChip||'', userDate, date:new Date().toISOString(), cuentaId});
+  saveMovs(movs);
+  // Doble entrada: actualizar saldo de cuenta
+  if (cuentaId) {
+    const isIngreso = selType.startsWith('ingreso');
+    cuentaApplyDelta(cuentaId, isIngreso ? amount : -amount);
+  }
+  closeModals(); refresh();
+  // Proponer programar mensualmente si es fijo y no existe ya
+  if ((selType==='ingreso-fijo'||selType==='gasto-fijo') &&
+      !loadBills().some(b=>b.name.toLowerCase()===name.toLowerCase())) {
+    document.getElementById('autoProgName').value = name;
+    document.getElementById('autoProgMonto').value = amount;
+    document.getElementById('autoProgDir').value = selType.startsWith('ingreso') ? 'ingreso' : 'gasto';
+    document.getElementById('autoProgEmoji').value = selType==='ingreso-fijo' ? '💼' : '🏠';
+    document.getElementById('autoProgDia').value = userDate ? userDate.split('-')[2] : '';
+    document.getElementById('modalAutoProg').style.display = 'flex';
+  }
 };
 
 // ── BILL DIRECTION TOGGLE ──
@@ -1357,10 +1595,54 @@ document.getElementById('submitFondo').onclick = () => {
 document.getElementById('submitFondoMov').onclick = () => {
   const monto = parseFloat(document.getElementById('fondoMovMonto').value);
   if (!monto||monto<=0) return;
+  const cuentaId = document.getElementById('fondoMovCuenta').value || '';
   saveFondos(loadFondos().map(f =>
     f.id===fondoMovId ? {...f, actual: Math.max(0, f.actual + monto*fondoMovDir)} : f
   ));
+  // Doble entrada: agregar al fondo debita la cuenta; retirar la acredita
+  if (cuentaId) cuentaApplyDelta(cuentaId, fondoMovDir > 0 ? -monto : monto);
   closeModals(); renderFondos();
+};
+
+// ── SUBMIT CUENTA LÍQUIDA ──
+document.getElementById('submitCuentaLiq').onclick = () => {
+  const name = document.getElementById('cuentaLiqNombre').value.trim();
+  if (!name) { document.getElementById('cuentaLiqNombre').style.borderColor='var(--red)'; return; }
+  saveCuentasLiq([...loadCuentasLiq(), {
+    id: Date.now().toString(), name,
+    emoji: document.getElementById('cuentaLiqEmoji').value,
+    balance: parseFloat(document.getElementById('cuentaLiqSaldo').value)||0,
+    currency: document.getElementById('cuentaLiqCurrency').value,
+    date: new Date().toISOString()
+  }]);
+  document.getElementById('cuentaLiqNombre').value=''; document.getElementById('cuentaLiqSaldo').value='';
+  closeModals(); renderCuentasLiq();
+};
+
+// ── SUBMIT AUTO-PROGRAMAR ──
+document.getElementById('submitAutoProg').onclick = () => {
+  const name  = document.getElementById('autoProgName').value;
+  const amount = parseFloat(document.getElementById('autoProgMonto').value)||0;
+  const dir   = document.getElementById('autoProgDir').value;
+  const emoji = document.getElementById('autoProgEmoji').value;
+  const dia   = Math.min(Math.max(parseInt(document.getElementById('autoProgDia').value)||1, 1), 31);
+  const alertDays = parseInt(document.getElementById('autoProgAlerta').value)||5;
+  const bills = loadBills();
+  bills.push({
+    id: Date.now().toString(), name, direction: dir,
+    amount, dia, frecuencia: 1, alertDays, emoji,
+    paidThisCycle: true   // ya registrado este mes
+  });
+  saveBills(bills);
+  closeModals(); refresh();
+};
+
+// ── SUBMIT AJUSTAR SALDO ──
+document.getElementById('submitAjustarCuenta').onclick = () => {
+  const saldo = parseFloat(document.getElementById('ajustarSaldo').value);
+  if (isNaN(saldo)) return;
+  saveCuentasLiq(loadCuentasLiq().map(c => c.id===ajustarCuentaId ? {...c, balance:saldo} : c));
+  closeModals(); renderCuentasLiq();
 };
 
 // ── INIT ──
