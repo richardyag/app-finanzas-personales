@@ -1,123 +1,192 @@
 # 📱 Manual de Instalación — Mis Finanzas
 
-Este manual explica cómo instalar la app **Mis Finanzas** en tu celular desde GitHub Pages, sin necesidad de tiendas de aplicaciones.
+Guía completa para instalar y usar la app **Mis Finanzas** en tu celular.
+Sin tiendas de aplicaciones. Sin registro. Sin servidores.
 
 ---
 
 ## Requisitos
 
-- Celular Android o iPhone
-- Conexión a internet (solo para la primera instalación)
-- Navegador: **Chrome** (Android) o **Safari** (iPhone)
+| Plataforma | Navegador recomendado |
+|---|---|
+| Android | Chrome (versión 80 o superior) |
+| iPhone / iPad | Safari (versión 14 o superior) |
+
+Solo necesitás internet para la primera instalación. Después funciona sin conexión.
 
 ---
 
-## Paso 1 — Abrir la app en el navegador
+## Paso 1 — Abrir la app
 
-Ingresá a la siguiente dirección desde tu celular:
+Desde tu celular, ingresá a:
 
 ```
 https://richardyag.github.io/app-finanzas-personales/finanzas.html
 ```
 
----
-
-## Instalación en Android (Chrome)
-
-**Paso 2A** — Abrí el menú del navegador
-
-Tocá los tres puntos ⋮ en la esquina superior derecha de Chrome.
-
-**Paso 3A** — Seleccioná "Añadir a pantalla de inicio"
-
-```
-Menú Chrome
-├── Nueva pestaña
-├── Nueva pestaña de incógnito
-├── ...
-└── ► Añadir a pantalla de inicio   ← tocá esto
-```
-
-**Paso 4A** — Confirmá el nombre
-
-Aparecerá un cuadro con el nombre "Mis Finanzas". Tocá **Añadir**.
-
-**Paso 5A** — Listo
-
-La app aparece en tu pantalla de inicio como cualquier otra aplicación. Tocala para abrirla.
+Podés escanear este link o escribirlo directamente en el navegador.
 
 ---
 
-## Instalación en iPhone / iPad (Safari)
+## Paso 2 — Instalar en Android (Chrome)
 
-> IMPORTANTE: Debe usarse Safari. Con Chrome en iOS no funciona la instalación.
+1. Tocá el menú **⋮** (tres puntos) en la esquina superior derecha
+2. Seleccioná **"Añadir a pantalla de inicio"**
 
-**Paso 2B** — Abrí el menú Compartir
+   ```
+   Menú Chrome
+   ├── Nueva pestaña
+   ├── Nueva pestaña de incógnito
+   ├── Historial
+   ├── ...
+   └── ► Añadir a pantalla de inicio   ← acá
+   ```
 
-Tocá el botón de compartir en la barra inferior de Safari. Es un cuadrado con una flecha apuntando hacia arriba ↑.
+3. Aparecerá un cuadro con el nombre **"Mis Finanzas"** — tocá **Añadir**
+4. El ícono aparece en tu pantalla de inicio como cualquier otra app
 
-**Paso 3B** — Seleccioná "En pantalla de inicio"
+> En algunos modelos Android, Chrome muestra primero un banner en la parte inferior de la pantalla que dice **"Agregar Mis Finanzas a la pantalla de inicio"**. Tocalo directamente.
 
-Deslizá hacia abajo en el menú de opciones:
+---
 
-```
-Opciones de Safari
-├── Copiar enlace
-├── Añadir a marcadores
-├── ...
-└── ► En pantalla de inicio   ← tocá esto
-```
+## Paso 2 — Instalar en iPhone / iPad (Safari)
 
-**Paso 4B** — Confirmá
+> **Importante:** tiene que ser Safari. Chrome en iOS no permite esta instalación.
 
-Tocá **Agregar** en la esquina superior derecha.
+1. Tocá el botón **Compartir** en la barra inferior de Safari
+   (es un cuadrado con una flecha hacia arriba ↑)
+2. Deslizá el menú hacia abajo y tocá **"En pantalla de inicio"**
 
-**Paso 5B** — Listo
+   ```
+   Opciones de Safari
+   ├── Copiar enlace
+   ├── Añadir a marcadores
+   ├── Añadir a favoritos
+   ├── ...
+   └── ► En pantalla de inicio   ← acá
+   ```
 
-La app aparece en tu pantalla de inicio con el nombre "Mis Finanzas".
+3. Tocá **Agregar** en la esquina superior derecha
+4. La app aparece en tu pantalla de inicio con el nombre **"Mis Finanzas"**
 
 ---
 
 ## Funcionamiento offline
 
-Una vez instalada, la app funciona **sin internet**. Tus datos se guardan directamente en el dispositivo.
+Una vez instalada, la app funciona **completamente sin internet**.
 
-La única excepción son las fuentes tipográficas (Google Fonts), que requieren conexión para cargar. Si usás la app sin internet, los textos se verán con fuentes del sistema (igual de legibles).
+Tus datos se guardan en dos lugares del dispositivo de forma automática:
+- **localStorage**: almacenamiento principal del navegador
+- **IndexedDB**: copia de seguridad automática que protege tus datos si el navegador limpia el caché
+
+La única excepción son las fuentes tipográficas (Google Fonts). Si usás la app sin internet, los textos se ven con fuentes del sistema, igual de legibles.
 
 ---
 
 ## Actualizar la app
 
-Si hay una versión nueva:
+Cuando haya una nueva versión:
 
-1. Abrí la app
-2. Tocá el ícono de recarga del navegador (desde el navegador, no desde el ícono de inicio)
-3. La nueva versión se carga automáticamente
+1. Abrí el link original en el navegador (no el ícono de la pantalla de inicio)
+2. Forzá la recarga: en Android presioná el ícono ↺, en iPhone mantenés el botón ↺
+3. Cerrá la pestaña y abrí la app desde el ícono — ya estará actualizada
+
+---
+
+## Qué puede hacer la app
+
+### Movimientos
+- Registrar **ingresos fijos** (sueldo, jubilación, renta) y **variables** (freelance, inversión, bonus)
+- Registrar **gastos fijos** (alquiler, servicios, cuotas) y **variables** (supermercado, comidas, ocio)
+- **Cambio de moneda** entre ARS, USD y EUR con tipo de cambio calculado automáticamente
+- Filtrar por tipo: Todos / Ingresos / Gastos
+- **Editar** cualquier movimiento tocando el botón ✎
+- Agregar **notas** opcionales a cada movimiento
+- **Exportar** el mes a CSV con el botón ⬇ del encabezado
+
+### 💰 Presupuestos
+- Asignar límites mensuales por categoría (Alquiler, Comidas, Ocio, etc.)
+- Ver barra de progreso por categoría con colores: verde / amarillo / rojo
+- Resumen general de lo presupuestado vs gastado en el mes
+
+### 🔮 Proyección de cierre de mes
+- El balance muestra automáticamente cuánto quedará a fin de mes según tu ritmo de gasto actual
+- También muestra tu tasa de ahorro del mes en tiempo real
+
+### 📊 Estadísticas
+- Gráfico de barras **mes a mes** (12 meses del año seleccionado)
+- Gráfico de barras **año a año** (tendencia histórica)
+- Gráfico de **dona por categoría** para ver en qué gastás más, mes a mes
+
+### 🏦 Patrimonio
+- **Cuentas líquidas**: banco, efectivo, billetera digital, bróker, cripto — con saldo actualizado automáticamente cada vez que registrás un ingreso o gasto
+- **Activos**: auto, casa, lote, departamento, tecnología, inversión, cripto
+- **Pasivos**: préstamos, hipoteca, tarjeta, cuotas
+- **Fondos de ahorro**: metas con barra de progreso; celebración al llegar al 100%
+
+### 🔔 Cuentas programadas
+- Configurar **cobros** (sueldo, alquiler cobrado) y **pagos** (luz, gas, internet) con día de vencimiento
+- Alertas automáticas días antes del vencimiento
+- Al registrar el pago real, se actualiza el monto esperado para el mes siguiente
+- Vista de **previsiones** en meses futuros
+
+---
+
+## Copia de seguridad de tus datos
+
+La app guarda tus datos automáticamente en el dispositivo. Para mayor seguridad:
+
+**Opción 1 — Exportar CSV**
+Tocá el botón ⬇ junto al nombre del mes para descargar todos los movimientos como archivo `.csv`. Guardalo en la nube (Drive, iCloud, etc.).
+
+**Opción 2 — No limpiar datos del navegador**
+Evitá usar "Limpiar caché" o "Borrar datos del sitio" en la configuración del navegador. La app tiene una copia de seguridad automática en IndexedDB, pero si limpiás completamente el almacenamiento del navegador ambas copias se borran.
 
 ---
 
 ## Desinstalar
 
 ### Android
-- Mantenés presionado el ícono de la app en la pantalla de inicio
-- Tocás "Desinstalar" o la arrastras a la papelera
+- Mantenés presionado el ícono → "Desinstalar" o arrastrarlo a la papelera
 
 ### iPhone
-- Mantenés presionado el ícono
-- Tocas "Eliminar app" → "Eliminar de pantalla de inicio"
+- Mantenés presionado el ícono → "Eliminar app" → "Eliminar de pantalla de inicio"
+
+> Desinstalar la app **no borra los datos** guardados en el navegador. Si reinstalás la app y usás el mismo navegador, tus datos siguen ahí.
 
 ---
 
 ## Preguntas frecuentes
 
 **¿Mis datos se sincronizan entre dispositivos?**
-No. Cada dispositivo tiene sus propios datos guardados localmente. Si querés pasar datos a otro celular, por ahora debés ingresarlos manualmente.
+No. Cada dispositivo guarda sus datos localmente. Para pasar datos a otro celular, exportá el CSV desde el dispositivo original e ingresá los datos manualmente en el nuevo.
 
 **¿Puedo perder mis datos?**
-Sí, si limpiás los datos del navegador o desinstalás la app. Por eso se recomienda no limpiar el caché del sitio.
+Solo si limpiás manualmente los datos del navegador o restablecés el celular de fábrica. La app usa dos capas de almacenamiento local (localStorage + IndexedDB) para mayor resiliencia.
 
 **¿Funciona en modo avión?**
-Sí, la app funciona completamente offline una vez cargada por primera vez.
+Sí, completamente. Una vez abierta por primera vez, no necesita internet para nada.
 
-**¿Es seguro?**
-Todos los datos quedan en tu celular. La app no envía información a ningún servidor.
+**¿Es segura? ¿Quién ve mis datos?**
+Nadie. Los datos nunca salen del dispositivo. No hay servidor, no hay cuenta, no hay telemetría.
+
+**¿Por qué no está en Google Play o App Store?**
+Las PWA (Progressive Web Apps) se instalan directamente desde el navegador, sin pasar por tiendas. Es más simple, más privado y sin actualizaciones forzadas.
+
+**¿Puedo usarla en la computadora?**
+Sí. Abrí el link en Chrome de escritorio. También se puede instalar como app de escritorio desde el ícono que aparece en la barra de direcciones de Chrome (⊕).
+
+---
+
+## Información técnica
+
+| Elemento | Detalle |
+|---|---|
+| Tipo | Progressive Web App (PWA) |
+| Tecnología | HTML5 + CSS3 + JavaScript puro |
+| Almacenamiento | localStorage + IndexedDB (automático) |
+| Gráficos | Chart.js 4 (CDN) |
+| Fuentes | Google Fonts: Fraunces + DM Sans |
+| Dependencias externas | Ninguna (solo fuentes y gráficos vía CDN) |
+| Código fuente | https://github.com/richardyag/app-finanzas-personales |
+| Licencia | MIT |
